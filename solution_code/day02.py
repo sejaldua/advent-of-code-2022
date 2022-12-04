@@ -1,97 +1,71 @@
+from os import write
 from aocd.models import Puzzle
 from utils import get_test_input, write_solution
 
 """
-Day 2: Deep Dive
+Day 2: Rock Paper Scissors
 """
 
-puzzle = Puzzle(year=2021, day=2)
+puzzle = Puzzle(year=2022, day=2)
 
 """
 Part A: 
-- forward X increases the horizontal position by X units.
-- down X increases the depth by X units.
-- up X decreases the depth by X units.
-
-Calculate the horizontal position and depth you would have after 
-following the planned course. What do you get if you multiply your 
-final horizontal position by your final depth?
+Rock paper scissors scoring
+total score = shape you selected + outcome of the round
+    - shape you selected:
+        Rock (A, X) => 1
+        Paper (B, Y) => 2
+        Scissors (C, Z)=> 3
+    - outcomes of the round:
+        Loss => 0
+        Draw => 3
+        Win => 6
 """
 
-######### NAIVE SOLUTION #########
-# horiz, depth = 0, 0
-# for line in data:
-#     direction, units = line.split(' ')
-#     units = int(units)
-#     if direction == 'forward':
-#         horiz += units
-#     elif direction == 'down':
-#         depth += units
-#     elif direction == 'up':
-#         depth -= units
-# puzzle.answer_a = horiz * depth
+def score(p1, p2):
+    '''they are p1, you are p2'''
+    your_shape = p2 + 1
+    their_shape = p1 + 1
+    outcome_mapping = {'win': 6, 'draw': 3, 'loss': 0}
+    if (their_shape - 2) % 3 == your_shape - 1:
+        outcome = 'loss'
+    elif (your_shape - 2) % 3 == their_shape - 1:
+        outcome = 'win'
+    else:
+        outcome = 'draw'
+    return your_shape + outcome_mapping[outcome]
 
-######### MORE ROBUST SOLUTION #########
+def part_a(test=False):
+    data = get_test_input('day02') if test else Puzzle(year=2022, day=2).input_data
+    data = data.splitlines()
+    data = [line.split() for line in data]
+    # map letters to numbers using 'A' and 'X' as anchors
+    data = [(ord(p1) - ord("A"), ord(p2) - ord("X")) for p1, p2 in data]
+    return sum(score(p1, p2) for p1, p2 in data)
 
-# function to adjust position according to direction and number of units
-def move(pos, direction, units):
-    if direction == "forward":
-        return (pos[0] + units, pos[1])
-    elif direction == "down":
-        return (pos[0], pos[1] + units)
-    elif direction == "up":
-        return (pos[0], pos[1] - units)
-    raise ValueError
+assert(part_a(test=True) == 15)
+answer_a = part_a()
+write_solution('day02', 'a', answer_a)
+puzzle.answer_a = answer_a  
+
 
 """
 Part B:
-- down X increases your aim by X units.
-- up X decreases your aim by X units.
-- forward X does two things:
-    - It increases your horizontal position by X units.
-    - It increases your depth by your aim multiplied by X.
-
-Using this new interpretation of the commands, calculate the horizontal 
-position and depth you would have after following the planned course. What do 
-you get if you multiply your final horizontal position by your final depth?
+The second letter now represents the desired outcome:
+    X => loss
+    Y => draw
+    Z => win
 """
 
-# function to adjust position and aim according to direction and number of units
-def move_with_aim(pos, direction, units):
-    if direction == "forward":
-        return (pos[0] + units, pos[1] + (pos[2] * units), pos[2])
-    elif direction == "down":
-        return (pos[0], pos[1], pos[2] + units)
-    elif direction == "up":
-        return (pos[0], pos[1], pos[2] - units)
-    raise ValueError
+def part_b(test=False):
+    data = get_test_input('day02') if test else Puzzle(year=2022, day=2).input_data
+    data = data.splitlines()
+    data = [line.split() for line in data]
+    # map letters to numbers using 'A' and 'X' as anchors
+    data = [(ord(p1) - ord("A"), ord(p2) - ord("X")) for p1, p2 in data]
+    return sum(score(p1, (p1 + p2 - 1) % 3) for p1, p2 in data)
 
-# puzzle.answer_b = pos[0] * pos[1]
-
-#####################################################
-
-# parse each line, splitting into a direction and number of units
-def parse(line):
-    direction, units = line.split(" ")
-    return direction, int(units)
-
-def driver(pos, helper_func, test=False):
-    data = get_test_input('day02').splitlines() if test else Puzzle(year=2021, day=2).input_data.splitlines()
-    commands = list(map(parse, data))
-    for cmd in commands:
-        pos = helper_func(pos, *cmd)
-    # multiply final horizontal position by final depth position
-    return pos[0] * pos[1]
-
-
-# Part A
-assert(driver((0,0), move, test=True) == 150)
-answer_a = driver((0,0), move)
-write_solution('day02', 'a', answer_a)
-# puzzle.answer_a = answer_a
-
-# Part B
-assert(driver((0,0,0), move_with_aim, test=True) == 900)
-answer_b = driver((0,0,0), move_with_aim)
+assert(part_b(test=True) == 12)
+answer_b = part_b()
 write_solution('day02', 'b', answer_b)
-# puzzle.answer_b = answer_b
+puzzle.answer_b = answer_b
