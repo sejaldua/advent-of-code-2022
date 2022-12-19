@@ -1,67 +1,106 @@
+from os import write
 from aocd.models import Puzzle
 from utils import get_test_input, write_solution
-from collections import defaultdict
+import re
 
 """
-Day 5: Hydrothermal Venture
+Day 5: Supply Stacks
 """
 
-puzzle = Puzzle(year=2021, day=5)
+puzzle = Puzzle(year=2022, day=5)
 
-def str_to_tuple(coords: str) -> tuple:
-    return tuple(map(int, coords.split(',')))
+def parse_stacks(lines: list) -> list:
+    """ Parse stacks from the input file """
 
-def parse_raw_data(data: list) -> list:
-    lines = list(map(lambda x: x.split(" -> "), data.splitlines()))
-    lines = list(map(lambda line: [str_to_tuple(coords) for coords in line], lines))
-    return lines
+    # number of stacks (last number of the line with the stacks numbers)
+    num_stacks = int(re.findall('(\d+)', lines[-1])[-1])
 
-def draw(grid: list, coords: list, ignore_diagonal: bool = False) -> list:
-    x1, y1 = coords[0]
-    x2, y2 = coords[1]
-    if x1 == x2:
-        for y in range(min(y1, y2), max(y1, y2) + 1):
-            grid[(x1, y)] += 1
-    elif y1 == y2:
-        for x in range(min(x1, x2), max(x1, x2) + 1):
-            grid[(x, y1)] += 1
-    elif not ignore_diagonal and abs(x1 - x2) == abs(y1 - y2):
-        dx = 1 if x1 < x2 else -1
-        dy = 1 if y1 < y2 else -1
-        for n in range(abs(x1 - x2) + 1):
-            grid[(x1 + n * dx, y1 + n * dy)] += 1
-    return grid
+    # create empty stacks
+    stacks = [[] for _ in range(num_stacks)]
 
-def driver(test=False, ignore_diagonal=True):
-    data = get_test_input('day05') if test else Puzzle(year=2021, day=5).input_data
-    all_lines = parse_raw_data(data)
-    grid = defaultdict(int)
-    for coords in all_lines:
-        grid = draw(grid, coords, ignore_diagonal=ignore_diagonal)
-    return sum(1 for vents in grid.values() if vents > 1)
+    # "[X] [Y] [Z]" -> ["X", "Y", "Z"]
+    for line in lines[:-1][::-1]:
+        for i in range(num_stacks):
+            elem = line[(i*4)+1]
+            if elem != ' ':
+                stacks[i].append(elem)
+
+    return stacks
+
+def read_message(stacks: list) -> str:
+    """ Get the final message """
+    # get le last letter (=top) of each stack
+    return ''.join([stack[-1] for stack in stacks])
 
 """
 Part A: 
-Each line of vents is given as a line segment in the format x1,y1 -> x2,y2 
-where x1,y1 are the coordinates of one end the line segment and x2,y2 are the 
-coordinates of the other end. These line segments include the points at both 
-ends. 
-Consider only horizontal and vertical lines (lines where either 
-x1 = x2 or y1 = y2). At how many points do at least two lines overlap?  
+After the rearrangement procedure completes, what crate ends up on top of each stack?
 """
 
-assert(driver(test=True, ignore_diagonal=True) == 5)
-answer_a = driver(ignore_diagonal=True)
+def CrateMover9000(stacks: list, moves: list) -> list:
+    """ Apply the moves (of the form "move X from Y to Z") to the stacks
+        (One crate at a time : CrateMover 9000)"""
+    for move in moves:
+        # parse numbers from a string of the form "move X from Y to Z"
+        num_moves, start, end = [int(x) for x in re.findall('\d+', move)]
+
+        # LIFO
+        for _ in range(num_moves):
+            crate = stacks[start-1].pop()
+            stacks[end-1].append(crate)
+
+    return stacks
+
+def part_a(test=False):
+    data = get_test_input('day05') if test else Puzzle(year=2022, day=5).input_data
+    puzzle, instructions = data.split('\n\n')
+    puzzle = puzzle.splitlines()
+    instructions = instructions.splitlines()
+    stacks = parse_stacks(puzzle)
+    stacks = CrateMover9000(stacks, instructions)
+    message = read_message(stacks)
+    return message
+
+assert(part_a(test=True) == 'CMZ')
+answer_a = part_a()
 write_solution('day05', 'a', answer_a)
-puzzle.answer_a = answer_a
+puzzle.answer_a = answer_a  
 
 """
-Part B: 
-Consider all of the lines (including diagonals). At how many points 
-do at least two lines overlap?
+Part B:
+In how many assignment pairs do the ranges overlap?
 """
 
-assert(driver(test=True, ignore_diagonal=False) == 12)
-answer_b = driver(ignore_diagonal=False)
+def CrateMover9001(stacks: list, moves: list) -> list:
+    """ Apply the moves (of the form "move X from Y to Z") to the stacks
+        (One crate at a time : CrateMover 9000)"""
+    for move in moves:
+        # parse numbers from a string of the form "move X from Y to Z"
+        num_moves, start, end = [int(x) for x in re.findall('\d+', move)]
+
+        # FIFO
+        queue = []
+        for _ in range(num_moves):
+            queue.append(
+                stacks[start-1].pop()
+            )
+        
+        for crate in queue[::-1]:
+            stacks[end-1].append(crate)
+
+    return stacks
+
+def part_b(test=False):
+    data = get_test_input('day05') if test else Puzzle(year=2022, day=5).input_data
+    puzzle, instructions = data.split('\n\n')
+    puzzle = puzzle.splitlines()
+    instructions = instructions.splitlines()
+    stacks = parse_stacks(puzzle)
+    stacks = CrateMover9001(stacks, instructions)
+    message = read_message(stacks)
+    return message
+
+assert(part_b(test=True) == 'MCD')
+answer_b = part_b()
 write_solution('day05', 'b', answer_b)
 puzzle.answer_b = answer_b
