@@ -68,7 +68,7 @@ puzzle.answer_a = answer_a
 
 """
 Part B:
-In how many assignment pairs do the ranges overlap?
+Same problem as Part A, but FIFO instead of LIFO this time
 """
 
 def CrateMover9001(stacks: list, moves: list) -> list:
